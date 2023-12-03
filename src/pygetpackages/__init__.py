@@ -1,3 +1,5 @@
+"""Get the top-level packages of a Python project."""
+
 import csv
 import pathlib
 import tempfile
@@ -11,6 +13,7 @@ from validate_pyproject import api, errors
 
 
 def get_packages(source_dir, *, build_config_settings=None):
+    """Get the top-level packages of a Python project."""
     pyproject_toml_path = pathlib.Path(source_dir) / "pyproject.toml"
     if not pyproject_toml_path.is_file():
         raise ValueError(
