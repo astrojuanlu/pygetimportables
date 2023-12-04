@@ -4,7 +4,7 @@ from importlib.metadata import metadata
 
 # -- Project information
 
-_metadata = metadata("pygetpackages")
+_metadata = metadata("pygetimportables")
 
 project = _metadata["Name"]
 author = _metadata["Author-email"].split("<", 1)[0].strip()

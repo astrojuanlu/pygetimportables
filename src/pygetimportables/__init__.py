@@ -1,4 +1,4 @@
-"""Get the top-level packages of a Python project."""
+"""Get the top-level importable names of a Python project."""
 # The good parts come from https://gist.github.com/pradyunsg/22ca089b48ca55d75ca843a5946b2691
 # Licensed under the MIT license.
 #
@@ -103,20 +103,20 @@ def _get_importable_components_from_wheel(
     return importable_components
 
 
-def get_packages_from_wheel(wheel_path: str | Path) -> set[str]:
-    """Get the top-level packages of a Python project from a wheel file."""
+def get_top_importables_from_wheel(wheel_path: str | Path) -> set[str]:
+    """Get the top-level importable names of a Python project from a wheel file."""
     with zipfile.ZipFile(wheel_path, "r") as zf:
         wheel_file = WheelFile(zf)
         importable_components = _get_importable_components_from_wheel(wheel_file)
-        top_packages = _determine_major_import_names(importable_components)
+        top_importables = _determine_major_import_names(importable_components)
 
-    return top_packages
+    return top_importables
 
 
-def get_packages(
+def get_top_importables(
     source_dir: str | Path, *, build_config_settings: ConfigSettingsType | None = None
 ) -> set[str]:
-    """Get the top-level packages of a Python source tree."""
+    """Get the top-level importable names of a Python source tree."""
     pyproject_toml_path = Path(source_dir) / "pyproject.toml"
     if not pyproject_toml_path.is_file():
         raise ValueError(
@@ -141,6 +141,6 @@ def get_packages(
         wheel_path = _simple_build_wheel(
             source_dir, outdir, build_config_settings=build_config_settings
         )
-        top_packages = get_packages_from_wheel(wheel_path)
+        top_importables = get_top_importables_from_wheel(wheel_path)
 
-    return top_packages
+    return top_importables

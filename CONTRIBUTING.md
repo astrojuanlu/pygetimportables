@@ -2,7 +2,7 @@
 
 ## Before contributing
 
-Welcome to pygetpackages! Before contributing to the project,
+Welcome to pygetimportables! Before contributing to the project,
 make sure that you **read our code of conduct** (`CODE_OF_CONDUCT.md`).
 
 ## Contributing code
