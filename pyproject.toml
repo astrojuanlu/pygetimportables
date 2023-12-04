@@ -99,9 +99,9 @@ module = "pygetpackages"
 disallow_untyped_defs = true
 
 # Ignore certain missing imports
-# [[tool.mypy.overrides]]
-# module = "thirdparty.*"
-# ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyproject_hooks.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = [
