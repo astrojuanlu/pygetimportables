@@ -24,11 +24,14 @@
 
 import pathlib
 import tempfile
-import tomllib
 import typing as t
 import zipfile
 
 from build import ProjectBuilder
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 from build.env import DefaultIsolatedEnv
 from installer.sources import WheelFile, WheelSource
 from installer.utils import parse_metadata_file

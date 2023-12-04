@@ -12,6 +12,7 @@ dependencies = [
     "build",
     "installer",
     "pyproject_hooks",
+    "tomli ; python_version < '3.11'",
     "validate-pyproject",
 ]
 authors = [
