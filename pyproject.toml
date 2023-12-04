@@ -10,6 +10,7 @@ license = {file = "LICENSE"}
 description = "Python function that gets packages from a source tree"
 dependencies = [
     "build",
+    "installer",
     "pyproject_hooks",
     "validate-pyproject",
 ]
