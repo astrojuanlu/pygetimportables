@@ -3,14 +3,16 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [project]
-name = "pygetpackages"
+name = "pygetimportables"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
-description = "Python function that gets packages from a source tree"
+description = "Python functions to get top-level importable names"
 dependencies = [
     "build",
+    "installer",
     "pyproject_hooks",
+    "tomli ; python_version < '3.11'",
     "validate-pyproject",
 ]
 authors = [
@@ -23,14 +25,17 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dynamic = ["version"]
 
 [project.urls]
-source = "https://github.com/astrojuanlu/pygetpackages"
-tracker = "https://github.com/astrojuanlu/pygetpackages/issues"
-documentation = "https://pygetpackages.readthedocs.io"
+source = "https://github.com/astrojuanlu/pygetimportables"
+tracker = "https://github.com/astrojuanlu/pygetimportables/issues"
+documentation = "https://pygetimportables.readthedocs.io"
 
 [project.optional-dependencies]
 test = [
@@ -89,13 +94,17 @@ no_implicit_reexport = true
 
 # More strict checks for library code
 [[tool.mypy.overrides]]
-module = "pygetpackages"
+module = "pygetimportables"
 disallow_untyped_defs = true
 
 # Ignore certain missing imports
-# [[tool.mypy.overrides]]
-# module = "thirdparty.*"
-# ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyproject_hooks.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = [

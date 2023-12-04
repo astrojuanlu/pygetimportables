@@ -1,4 +1,4 @@
-"""Get the top-level packages of a Python project."""
+"""Get the top-level importable names of a Python project."""
 # The good parts come from https://gist.github.com/pradyunsg/22ca089b48ca55d75ca843a5946b2691
 # Licensed under the MIT license.
 #
@@ -22,13 +22,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pathlib
+from __future__ import annotations
+
 import tempfile
-import tomllib
 import typing as t
 import zipfile
+from pathlib import Path
 
-from build import ProjectBuilder
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # type: ignore
+from build import ConfigSettingsType, ProjectBuilder
 from build.env import DefaultIsolatedEnv
 from installer.sources import WheelFile, WheelSource
 from installer.utils import parse_metadata_file
@@ -37,8 +42,11 @@ from validate_pyproject import api, errors
 
 
 def _simple_build_wheel(
-    source_dir, out_dir, *, build_config_settings=None
-) -> WheelFile:
+    source_dir: str | Path,
+    out_dir: str | Path,
+    *,
+    build_config_settings: ConfigSettingsType | None = None,
+) -> Path:
     """Silently build wheel using build package."""
     with DefaultIsolatedEnv() as env:
         builder = ProjectBuilder.from_isolated_env(
@@ -47,7 +55,7 @@ def _simple_build_wheel(
         env.install(builder.build_system_requires)
         env.install(builder.get_requires_for_build("wheel", build_config_settings))
         path_built_wheel = builder.build("wheel", out_dir, build_config_settings)
-    return path_built_wheel
+    return Path(path_built_wheel)
 
 
 def _find_importable_components_from_wheel_content_listing(
@@ -80,7 +88,9 @@ def _determine_major_import_names(
     return {components[0] for components in importable_components}
 
 
-def _get_importable_components_from_wheel(wheel: WheelSource) -> t.Iterable[str]:
+def _get_importable_components_from_wheel(
+    wheel: WheelSource
+) -> t.Iterable[tuple[str, ...]]:
     metadata = parse_metadata_file(wheel.read_dist_info("WHEEL"))
     if not (metadata["Wheel-Version"] and metadata["Wheel-Version"].startswith("1.")):
         raise NotImplementedError("Only supports wheel 1.x")
@@ -95,19 +105,21 @@ def _get_importable_components_from_wheel(wheel: WheelSource) -> t.Iterable[str]
     return importable_components
 
 
-def get_packages_from_wheel(wheel_path: str | pathlib.Path):
-    """Get the top-level packages of a Python project from a wheel file."""
+def get_top_importables_from_wheel(wheel_path: str | Path) -> set[str]:
+    """Get the top-level importable names of a Python project from a wheel file."""
     with zipfile.ZipFile(wheel_path, "r") as zf:
         wheel_file = WheelFile(zf)
         importable_components = _get_importable_components_from_wheel(wheel_file)
-        top_packages = _determine_major_import_names(importable_components)
+        top_importables = _determine_major_import_names(importable_components)
 
-    return top_packages
+    return top_importables
 
 
-def get_packages(source_dir, *, build_config_settings=None):
-    """Get the top-level packages of a Python source tree."""
-    pyproject_toml_path = pathlib.Path(source_dir) / "pyproject.toml"
+def get_top_importables(
+    source_dir: str | Path, *, build_config_settings: ConfigSettingsType | None = None
+) -> set[str]:
+    """Get the top-level importable names of a Python source tree."""
+    pyproject_toml_path = Path(source_dir) / "pyproject.toml"
     if not pyproject_toml_path.is_file():
         raise ValueError(
             "pyproject.toml is missing from source directory, "
@@ -131,6 +143,6 @@ def get_packages(source_dir, *, build_config_settings=None):
         wheel_path = _simple_build_wheel(
             source_dir, outdir, build_config_settings=build_config_settings
         )
-        top_packages = get_packages_from_wheel(wheel_path)
+        top_importables = get_top_importables_from_wheel(wheel_path)
 
-    return top_packages
+    return top_importables
