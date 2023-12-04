@@ -1,18 +1,44 @@
 """Get the top-level packages of a Python project."""
+# The good parts come from https://gist.github.com/pradyunsg/22ca089b48ca55d75ca843a5946b2691
+# Licensed under the MIT license.
+#
+# Copyright (c) 2022 Pradyun Gedam <mail@pradyunsg.me>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the “Software”), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-import csv
 import pathlib
 import tempfile
 import tomllib
+import typing as t
 import zipfile
 
 from build import ProjectBuilder
 from build.env import DefaultIsolatedEnv
+from installer.sources import WheelFile, WheelSource
+from installer.utils import parse_metadata_file
 from pyproject_hooks import quiet_subprocess_runner
 from validate_pyproject import api, errors
 
 
-def _simple_build_wheel(source_dir, out_dir, *, build_config_settings=None):
+def _simple_build_wheel(
+    source_dir, out_dir, *, build_config_settings=None
+) -> WheelFile:
     """Silently build wheel using build package."""
     with DefaultIsolatedEnv() as env:
         builder = ProjectBuilder.from_isolated_env(
@@ -24,32 +50,63 @@ def _simple_build_wheel(source_dir, out_dir, *, build_config_settings=None):
     return path_built_wheel
 
 
+def _find_importable_components_from_wheel_content_listing(
+    filepaths: t.Iterable[str], *, dist_info_dir: str, data_dir: str
+) -> t.Iterable[tuple[str, ...]]:
+    purelib_str = f"{data_dir}/purelib/"
+    platlib_str = f"{data_dir}/platlib/"
+    for path in filepaths:
+        if path.startswith(dist_info_dir):
+            # Nothing in dist-info is importable.
+            continue
+
+        if path.startswith((platlib_str, purelib_str)):
+            # Remove the prefix from purelib and platlib files.
+            name = path[len(platlib_str) :]
+        elif path.startswith(data_dir):
+            # Nothing else in data is importable.
+            continue
+        else:
+            # Top level files end up in an importable location.
+            name = path
+
+        if name.endswith(".py"):
+            yield tuple(name[: -len(".py")].split("/"))
+
+
+def _determine_major_import_names(
+    importable_components: t.Iterable[tuple[str, ...]]
+) -> set[str]:
+    return {components[0] for components in importable_components}
+
+
+def _get_importable_components_from_wheel(wheel: WheelSource) -> t.Iterable[str]:
+    metadata = parse_metadata_file(wheel.read_dist_info("WHEEL"))
+    if not (metadata["Wheel-Version"] and metadata["Wheel-Version"].startswith("1.")):
+        raise NotImplementedError("Only supports wheel 1.x")
+
+    filepaths: t.Iterable[str] = (
+        record_elements[0] for record_elements, _, _ in wheel.get_contents()
+    )
+    importable_components = _find_importable_components_from_wheel_content_listing(
+        filepaths, dist_info_dir=wheel.dist_info_dir, data_dir=wheel.data_dir
+    )
+
+    return importable_components
+
+
 def get_packages_from_wheel(wheel_path: str | pathlib.Path):
     """Get the top-level packages of a Python project from a wheel file."""
     with zipfile.ZipFile(wheel_path, "r") as zf:
-        record_fnames = [
-            fname for fname in zf.namelist() if fname.endswith(".dist-info/RECORD")
-        ]
-        record_fname = min(record_fnames, key=len)
-        with zf.open(record_fname) as fh:
-            record_content = fh.read().decode()
+        wheel_file = WheelFile(zf)
+        importable_components = _get_importable_components_from_wheel(wheel_file)
+        top_packages = _determine_major_import_names(importable_components)
 
-    record_files = [
-        pathlib.Path(row[0]) for row in csv.reader(record_content.splitlines())
-    ]
-
-    # A directory is a top-level package if it contains a top-level __init__.py file
-    top_packages = {
-        record_file.parts[0]
-        for record_file in record_files
-        if len(record_file.parts) > 1 and record_file.parts[1] == "__init__.py"
-    }
-
-    return list(top_packages)
+    return top_packages
 
 
 def get_packages(source_dir, *, build_config_settings=None):
-    """Get the top-level packages of a Python project."""
+    """Get the top-level packages of a Python source tree."""
     pyproject_toml_path = pathlib.Path(source_dir) / "pyproject.toml"
     if not pyproject_toml_path.is_file():
         raise ValueError(
@@ -76,4 +133,4 @@ def get_packages(source_dir, *, build_config_settings=None):
         )
         top_packages = get_packages_from_wheel(wheel_path)
 
-    return list(top_packages)
+    return top_packages
