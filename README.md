@@ -22,14 +22,14 @@ To get the top-level importable names directly from a source tree:
 
 ```
 >>> from pygetimportables import get_top_importables
->>> get_top_importables(".")  # Wait a few seconds, requires working `pip install`
+>>> get_top_importables(".")  # Wait a few seconds, requires working `uv pip install`
 {'pygetimportables'}
 ```
 
 To get the top-level importable names from an already built wheel:
 
 ```
-(.venv) $ python -m build
+(.venv) $ python -m build --installer uv
 ...
 (.venv) $ python -q
 >>> from pygetimportables import get_top_importables_from_wheel

@@ -48,7 +48,7 @@ def _simple_build_wheel(
     build_config_settings: ConfigSettingsType | None = None,
 ) -> Path:
     """Silently build wheel using build package."""
-    with DefaultIsolatedEnv() as env:
+    with DefaultIsolatedEnv(installer="uv") as env:
         builder = ProjectBuilder.from_isolated_env(
             env, source_dir, runner=quiet_subprocess_runner
         )
