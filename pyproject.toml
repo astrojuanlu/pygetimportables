@@ -75,7 +75,7 @@ select = [
 convention = "numpy"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_redundant_casts = true
 warn_unused_configs = true
 pretty = true
