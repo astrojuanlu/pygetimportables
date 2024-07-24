@@ -9,7 +9,7 @@ requires-python = ">=3.9"
 license = {file = "LICENSE"}
 description = "Python functions to get top-level importable names"
 dependencies = [
-    "build",
+    "build[uv]>=1.2.0",
     "installer",
     "pyproject_hooks",
     "tomli ; python_version < '3.11'",
