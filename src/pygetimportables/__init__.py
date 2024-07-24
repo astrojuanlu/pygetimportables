@@ -83,13 +83,13 @@ def _find_importable_components_from_wheel_content_listing(
 
 
 def _determine_major_import_names(
-    importable_components: t.Iterable[tuple[str, ...]]
+    importable_components: t.Iterable[tuple[str, ...]],
 ) -> set[str]:
     return {components[0] for components in importable_components}
 
 
 def _get_importable_components_from_wheel(
-    wheel: WheelSource
+    wheel: WheelSource,
 ) -> t.Iterable[tuple[str, ...]]:
     metadata = parse_metadata_file(wheel.read_dist_info("WHEEL"))
     if not (metadata["Wheel-Version"] and metadata["Wheel-Version"].startswith("1.")):

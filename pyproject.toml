@@ -51,8 +51,13 @@ doc = [
     "sphinx-copybutton",
 ]
 
+[tool.pdm.version]
+source = "scm"
+
 [tool.ruff]
 show-fixes = true
+
+[tool.ruff.lint]
 select = [
     "F",  # Pyflakes
     "E",  # Pycodestyle
@@ -63,13 +68,10 @@ select = [
     "PL",  # Pylint
 ]
 
-[tool.pdm.version]
-source = "scm"
-
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["D", "PLR2004"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.mypy]
